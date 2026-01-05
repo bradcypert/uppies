@@ -1,0 +1,36 @@
+{
+  "name": "uppies",
+  "version": "0.0.0",
+  "description": "A sharp, minimal app update orchestrator for Unix",
+  "private": true,
+  "directories": {
+    "example": "example"
+  },
+  "scripts": {
+    "test": "zig build test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YOUR_USERNAME/uppies.git"
+  },
+  "keywords": [
+    "update",
+    "orchestrator",
+    "version-management",
+    "unix",
+    "zig"
+  ],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/YOUR_USERNAME/uppies/issues"
+  },
+  "homepage": "https://github.com/YOUR_USERNAME/uppies#readme",
+  "devDependencies": {
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/exec": "^7.1.0",
+    "@semantic-release/git": "^10.0.1",
+    "conventional-changelog-conventionalcommits": "^9.1.0",
+    "semantic-release": "^25.0.2"
+  }
+}

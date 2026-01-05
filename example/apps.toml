@@ -1,0 +1,32 @@
+# Example uppies configuration
+# Copy this to ~/.local/share/uppies/apps.toml and customize
+
+[[app]]
+name = "dust"
+description = "du replacement"
+compare = "string"  # Optional: "string" (default) or "semver"
+
+[app.local]
+script = "/home/user/.local/share/uppies/apps/dust/local_version.sh"
+
+[app.remote]
+script = "/home/user/.local/share/uppies/apps/dust/remote_version.sh"
+
+[app.update]
+script = "/home/user/.local/share/uppies/apps/dust/update.sh"
+
+
+# Example with semver comparison
+# [[app]]
+# name = "fd"
+# description = "find alternative"
+# compare = "semver"
+# 
+# [app.local]
+# script = "/home/user/.local/share/uppies/apps/fd/local_version.sh"
+# 
+# [app.remote]
+# script = "/home/user/.local/share/uppies/apps/fd/remote_version.sh"
+# 
+# [app.update]
+# script = "/home/user/.local/share/uppies/apps/fd/update.sh"
