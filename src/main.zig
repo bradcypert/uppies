@@ -274,7 +274,7 @@ fn cmdSelfUpdate(allocator: std.mem.Allocator, repo: []const u8) !void {
     defer release_info.deinit();
 
     const current_version = self_update.getCurrentVersion();
-    
+
     try stdout.print("Current version: {s}\n", .{current_version});
     try stdout.print("Latest version:  {s}\n", .{release_info.version});
     try stdout.flush();
@@ -376,14 +376,14 @@ pub fn main() !void {
         var stderr_buf: [4096]u8 = undefined;
         var stderr_writer = std.fs.File.stderr().writer(&stderr_buf);
         const stderr = &stderr_writer.interface;
-        
+
         const err_msg = switch (err) {
             error.FileNotFound => "Config file not found",
             error.InvalidToml => "Invalid TOML syntax",
             error.AccessDenied => "Permission denied",
             else => "Failed to load config",
         };
-        
+
         try stderr.print("{s}: {s}\n", .{ err_msg, config_path });
         try stderr.print("Expected format: ~/.local/share/uppies/apps.toml\n", .{});
         try stderr.print("See example/apps.toml for reference\n", .{});
@@ -396,7 +396,7 @@ pub fn main() !void {
         var stderr_buf: [4096]u8 = undefined;
         var stderr_writer = std.fs.File.stderr().writer(&stderr_buf);
         const stderr = &stderr_writer.interface;
-        
+
         const err_msg = switch (err) {
             error.FileNotFound => "Script file not found",
             error.NotAFile => "Script path is not a file",
@@ -404,7 +404,7 @@ pub fn main() !void {
             error.InvalidConfig => "Invalid configuration",
             else => "Configuration validation failed",
         };
-        
+
         try stderr.print("Config validation error: {s}\n", .{err_msg});
         try stderr.flush();
         return err;

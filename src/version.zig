@@ -7,7 +7,7 @@ pub const Version = struct {
 
     pub fn parse(str: []const u8) !Version {
         const trimmed = std.mem.trim(u8, str, &std.ascii.whitespace);
-        
+
         // Remove leading 'v' if present
         const version_str = if (trimmed.len > 0 and trimmed[0] == 'v')
             trimmed[1..]
@@ -15,7 +15,7 @@ pub const Version = struct {
             trimmed;
 
         var parts = std.mem.splitScalar(u8, version_str, '.');
-        
+
         const major_str = parts.next() orelse return error.InvalidVersion;
         const minor_str = parts.next() orelse return error.InvalidVersion;
         const patch_str = parts.next() orelse return error.InvalidVersion;

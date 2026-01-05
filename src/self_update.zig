@@ -232,23 +232,23 @@ pub fn replaceBinary(allocator: std.mem.Allocator, new_binary_path: []const u8, 
 test "platform detection" {
     const platform = Platform.current();
     try std.testing.expect(platform != .unknown);
-    
+
     const asset = platform.assetName();
     try std.testing.expect(asset.len > 0);
 }
 
 test "version parsing" {
     const allocator = std.testing.allocator;
-    
+
     const json =
         \\{
         \\  "tag_name": "v1.2.3",
         \\  "name": "Release 1.2.3"
         \\}
     ;
-    
+
     const tag = try findJsonString(allocator, json, "tag_name");
     defer allocator.free(tag);
-    
+
     try std.testing.expectEqualStrings("v1.2.3", tag);
 }
