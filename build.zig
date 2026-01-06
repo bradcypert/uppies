@@ -23,7 +23,7 @@ pub fn build(b: *std.Build) void {
 
     // Read version from build.zig.zon
     const version = getVersionFromZon(b) orelse "0.0.0-dev";
-    
+
     const options = b.addOptions();
     options.addOption([]const u8, "version", version);
 
@@ -165,12 +165,12 @@ pub fn build(b: *std.Build) void {
 fn getVersionFromZon(b: *std.Build) ?[]const u8 {
     const zon_path = b.pathFromRoot("build.zig.zon");
     const zon_content = std.fs.cwd().readFileAlloc(b.allocator, zon_path, 1024 * 1024) catch return null;
-    
+
     // Simple parser to find .version = "x.y.z"
     const needle = ".version = \"";
     const start_pos = std.mem.indexOf(u8, zon_content, needle) orelse return null;
     const version_start = start_pos + needle.len;
     const version_end = std.mem.indexOfPos(u8, zon_content, version_start, "\"") orelse return null;
-    
+
     return b.allocator.dupe(u8, zon_content[version_start..version_end]) catch null;
 }
