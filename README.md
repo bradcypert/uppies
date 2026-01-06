@@ -1,6 +1,6 @@
 # uppies
 
-A sharp, minimal app update orchestrator for Unix.
+A minimal app update orchestrator for Unix.
 
 ## Philosophy
 
@@ -15,8 +15,6 @@ A sharp, minimal app update orchestrator for Unix.
 - A registry of "how to update this thing"
 - A thin wrapper around scripts
 - Opinionated about *when* to run scripts, not *how* they work
-
-Think: "git config + cron + sh, but coherent."
 
 ## Installation
 
