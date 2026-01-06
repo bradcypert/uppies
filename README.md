@@ -26,18 +26,18 @@ Download the latest release for your platform:
 
 ```bash
 # Linux x86_64
-curl -L https://github.com/YOUR_USERNAME/uppies/releases/latest/download/uppies-linux-x86_64.tar.gz | tar xz
+curl -L https://github.com/bradcypert/uppies/releases/latest/download/uppies-linux-x86_64.tar.gz | tar xz
 sudo mv uppies /usr/local/bin/
 
 # macOS (Apple Silicon)
-curl -L https://github.com/YOUR_USERNAME/uppies/releases/latest/download/uppies-macos-aarch64.tar.gz | tar xz
+curl -L https://github.com/bradcypert/uppies/releases/latest/download/uppies-macos-aarch64.tar.gz | tar xz
 sudo mv uppies /usr/local/bin/
 ```
 
 ### From Source
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/uppies
+git clone https://github.com/bradcypert/uppies
 cd uppies
 zig build -Doptimize=ReleaseSafe
 sudo cp zig-out/bin/uppies /usr/local/bin/
