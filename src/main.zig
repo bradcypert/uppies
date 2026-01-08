@@ -364,7 +364,7 @@ pub fn main() !void {
     if (args.command == .@"self-update") {
         // Use GitHub repo from environment or default
         // Set via: export UPPIES_REPO=username/uppies
-        const repo = std.posix.getenv("UPPIES_REPO") orelse "YOUR_USERNAME/uppies";
+        const repo = std.posix.getenv("UPPIES_REPO") orelse "bradcypert/uppies";
         try cmdSelfUpdate(allocator, repo);
         return;
     }

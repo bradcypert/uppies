@@ -1,6 +1,7 @@
 const std = @import("std");
 const version_mod = @import("version.zig");
 const build_options = @import("build_options");
+const log = std.log.scoped(.self_update);
 
 pub const Platform = enum {
     linux_x86_64,
@@ -61,6 +62,7 @@ pub fn fetchLatestRelease(allocator: std.mem.Allocator, repo: []const u8) !Relea
         .{repo},
     );
     defer allocator.free(url);
+    log.debug("Fetching release from: {s}", .{url});
 
     // Prepare curl command
     const curl_args = [_][]const u8{
@@ -84,76 +86,59 @@ pub fn fetchLatestRelease(allocator: std.mem.Allocator, repo: []const u8) !Relea
         return error.FetchFailed;
     }
 
+    log.debug("Received JSON response ({} bytes)", .{stdout.len});
     // Parse JSON response
     return parseReleaseJson(allocator, stdout);
 }
 
-fn parseReleaseJson(allocator: std.mem.Allocator, json: []const u8) !ReleaseInfo {
-    // Simple JSON parsing - look for tag_name and asset download_url
-    const tag_name = try findJsonString(allocator, json, "tag_name");
-    errdefer allocator.free(tag_name);
+fn parseReleaseJson(allocator: std.mem.Allocator, json_text: []const u8) !ReleaseInfo {
+    const parsed = try std.json.parseFromSlice(std.json.Value, allocator, json_text, .{});
+    defer parsed.deinit();
+
+    const root = parsed.value.object;
+
+    // Get tag_name
+    const tag_name_value = root.get("tag_name") orelse return error.InvalidJson;
+    const tag_name = tag_name_value.string;
+    log.debug("Found tag_name: {s}", .{tag_name});
 
     // Remove 'v' prefix if present
     const version = if (std.mem.startsWith(u8, tag_name, "v"))
         try allocator.dupe(u8, tag_name[1..])
     else
         try allocator.dupe(u8, tag_name);
-    allocator.free(tag_name);
     errdefer allocator.free(version);
 
     // Find the correct asset for current platform
     const platform = Platform.current();
     const asset_name = platform.assetName();
+    log.debug("Looking for asset: {s}", .{asset_name});
 
-    const download_url = try findAssetUrl(allocator, json, asset_name);
+    // Get assets array
+    const assets_value = root.get("assets") orelse return error.InvalidJson;
+    const assets = assets_value.array;
 
-    return ReleaseInfo{
-        .version = version,
-        .download_url = download_url,
-        .allocator = allocator,
-    };
-}
+    // Find the matching asset
+    for (assets.items) |asset_value| {
+        const asset = asset_value.object;
+        const name_value = asset.get("name") orelse continue;
+        const name = name_value.string;
 
-fn findJsonString(allocator: std.mem.Allocator, json: []const u8, key: []const u8) ![]const u8 {
-    const search = try std.fmt.allocPrint(allocator, "\"{s}\":", .{key});
-    defer allocator.free(search);
+        if (std.mem.eql(u8, name, asset_name)) {
+            const url_value = asset.get("browser_download_url") orelse return error.InvalidJson;
+            const url = url_value.string;
+            const download_url = try allocator.dupe(u8, url);
+            log.debug("Found download URL: {s}", .{download_url});
 
-    const pos = std.mem.indexOf(u8, json, search) orelse return error.KeyNotFound;
-    const after_key = json[pos + search.len ..];
-
-    // Skip whitespace and find opening quote
-    var i: usize = 0;
-    while (i < after_key.len and after_key[i] != '"') : (i += 1) {}
-    if (i >= after_key.len) return error.InvalidJson;
-
-    const start = i + 1;
-    const end = std.mem.indexOfPos(u8, after_key, start, "\"") orelse return error.InvalidJson;
-
-    return try allocator.dupe(u8, after_key[start..end]);
-}
-
-fn findAssetUrl(allocator: std.mem.Allocator, json: []const u8, asset_name: []const u8) ![]const u8 {
-    // Find the asset with matching name
-    const name_search = try std.fmt.allocPrint(allocator, "\"name\":\"{s}\"", .{asset_name});
-    defer allocator.free(name_search);
-
-    var search_start: usize = 0;
-    while (std.mem.indexOfPos(u8, json, search_start, name_search)) |pos| {
-        // Found the asset, now find its browser_download_url
-        // Look backwards for the start of this asset object
-        const asset_start = std.mem.lastIndexOfScalar(u8, json[0..pos], '{') orelse pos;
-        // Look forwards for the end of this asset object
-        const asset_end = std.mem.indexOfPos(u8, json, pos, "}") orelse json.len;
-        const asset_json = json[asset_start..asset_end];
-
-        // Find browser_download_url in this asset
-        if (findJsonString(allocator, asset_json, "browser_download_url")) |url| {
-            return url;
-        } else |_| {}
-
-        search_start = pos + 1;
+            return ReleaseInfo{
+                .version = version,
+                .download_url = download_url,
+                .allocator = allocator,
+            };
+        }
     }
 
+    log.debug("Asset not found: {s}", .{asset_name});
     return error.AssetNotFound;
 }
 
@@ -243,12 +228,19 @@ test "version parsing" {
     const json =
         \\{
         \\  "tag_name": "v1.2.3",
-        \\  "name": "Release 1.2.3"
+        \\  "name": "Release 1.2.3",
+        \\  "assets": [
+        \\    {
+        \\      "name": "uppies-linux-x86_64.tar.gz",
+        \\      "browser_download_url": "https://example.com/download.tar.gz"
+        \\    }
+        \\  ]
         \\}
     ;
 
-    const tag = try findJsonString(allocator, json, "tag_name");
-    defer allocator.free(tag);
+    var info = try parseReleaseJson(allocator, json);
+    defer info.deinit();
 
-    try std.testing.expectEqualStrings("v1.2.3", tag);
+    try std.testing.expectEqualStrings("1.2.3", info.version);
+    try std.testing.expectEqualStrings("https://example.com/download.tar.gz", info.download_url);
 }
