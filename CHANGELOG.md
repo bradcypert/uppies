@@ -1,3 +1,9 @@
+## [1.0.1](https://github.com/bradcypert/uppies/compare/v1.0.0...v1.0.1) (2026-01-08)
+
+### Bug Fixes
+
+* **self-update:** fix self update json parsing ([175565c](https://github.com/bradcypert/uppies/commit/175565c4ef82de148a58978b644c72f716a36c84))
+
 ## 1.0.0 (2026-01-06)
 
 ### Features
