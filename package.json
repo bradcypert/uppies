@@ -1,13 +1,13 @@
 {
   "name": "uppies",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "A sharp, minimal app update orchestrator for Unix",
   "private": true,
   "directories": {
     "example": "example"
   },
   "scripts": {
-    "test": "zig build test"
+    "test": "cargo test"
   },
   "repository": {
     "type": "git",
@@ -18,7 +18,7 @@
     "orchestrator",
     "version-management",
     "unix",
-    "zig"
+    "rust"
   ],
   "author": "",
   "license": "MIT",

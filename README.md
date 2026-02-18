@@ -37,8 +37,8 @@ sudo mv uppies /usr/local/bin/
 ```bash
 git clone https://github.com/bradcypert/uppies
 cd uppies
-zig build -Doptimize=ReleaseSafe
-sudo cp zig-out/bin/uppies /usr/local/bin/
+cargo build --release
+sudo cp target/release/uppies /usr/local/bin/
 ```
 
 ### Updating
@@ -219,10 +219,10 @@ fd       v8.7.0 → v8.7.1 (update available)
 
 ## Building
 
-Requires Zig 0.15.2+
+Requires Rust and Cargo
 
 ```bash
-zig build                # Debug build
-zig build -Doptimize=ReleaseSafe  # Release build
-zig build test           # Run tests
+cargo build                # Debug build
+cargo build --release      # Release build
+cargo test                 # Run tests
 ```

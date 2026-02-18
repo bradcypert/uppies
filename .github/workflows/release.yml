@@ -26,11 +26,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 'lts/*'
-      
-      - name: Install Zig
-        uses: mlugg/setup-zig@v2
+
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          version: 0.15.2
+          toolchain: stable
+      
+      - name: Install cross
+        run: cargo install cross --git https://github.com/cross-rs/cross.git
       
       - name: Install dependencies
         run: npm ci
@@ -39,31 +42,33 @@ jobs:
         run: |
           mkdir -p dist
           
-          # Build for Linux x86_64
-          zig build -Doptimize=ReleaseSafe -Dtarget=x86_64-linux-musl
+          # Linux x86_64 (musl)
+          cross build --release --target x86_64-unknown-linux-musl
           mkdir -p package
-          cp zig-out/bin/uppies package/
+          cp target/x86_64-unknown-linux-musl/release/uppies package/
           tar -czf dist/uppies-linux-x86_64.tar.gz -C package .
           rm -rf package
           
-          # Build for Linux aarch64
-          zig build -Doptimize=ReleaseSafe -Dtarget=aarch64-linux-musl
+          # Linux aarch64 (musl)
+          cross build --release --target aarch64-unknown-linux-musl
           mkdir -p package
-          cp zig-out/bin/uppies package/
+          cp target/aarch64-unknown-linux-musl/release/uppies package/
           tar -czf dist/uppies-linux-aarch64.tar.gz -C package .
           rm -rf package
           
-          # Build for macOS x86_64
-          zig build -Doptimize=ReleaseSafe -Dtarget=x86_64-macos
+          # macOS x86_64
+          rustup target add x86_64-apple-darwin
+          cargo build --release --target x86_64-apple-darwin
           mkdir -p package
-          cp zig-out/bin/uppies package/
+          cp target/x86_64-apple-darwin/release/uppies package/
           tar -czf dist/uppies-macos-x86_64.tar.gz -C package .
           rm -rf package
           
-          # Build for macOS aarch64 (Apple Silicon)
-          zig build -Doptimize=ReleaseSafe -Dtarget=aarch64-macos
+          # macOS aarch64
+          rustup target add aarch64-apple-darwin
+          cargo build --release --target aarch64-apple-darwin
           mkdir -p package
-          cp zig-out/bin/uppies package/
+          cp target/aarch64-apple-darwin/release/uppies package/
           tar -czf dist/uppies-macos-aarch64.tar.gz -C package .
           rm -rf package
       

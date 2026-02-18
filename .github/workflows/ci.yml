@@ -15,16 +15,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       
-      - name: Install Zig
-        uses: mlugg/setup-zig@v2
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          version: 0.15.2
-      
-      - name: Build
-        run: zig build
+          toolchain: stable
+          cache: true
       
       - name: Run tests
-        run: zig build test
+        run: cargo test
   
   lint:
     name: Lint
@@ -34,10 +32,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       
-      - name: Install Zig
-        uses: mlugg/setup-zig@v2
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          version: 0.15.2
+          toolchain: stable
+          cache: true
+          components: rustfmt, clippy
       
       - name: Format check
-        run: zig fmt --check src/
+        run: cargo fmt -- --check
+      
+      - name: Clippy
+        run: cargo clippy -- -D warnings
