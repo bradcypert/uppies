@@ -50,7 +50,7 @@
     [
       "@semantic-release/exec",
       {
-        "prepareCmd": "node scripts/update-cargo-version.js ${nextRelease.version}"
+        "prepareCmd": "node scripts/update-cargo-version.js ${nextRelease.version} && cargo update --workspace"
       }
     ],
     [
@@ -79,6 +79,10 @@
           {
             "path": "dist/uppies-macos-aarch64.tar.gz",
             "label": "uppies-macos-aarch64.tar.gz (Apple Silicon)"
+          },
+          {
+            "path": "dist/uppies-windows-x86_64.zip",
+            "label": "uppies-windows-x86_64.zip"
           }
         ]
       }

@@ -2,76 +2,141 @@ name: Release
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
 
 permissions:
   contents: write
   issues: write
   pull-requests: write
 
+env:
+  CARGO_TERM_COLOR: always
+
 jobs:
+  check:
+    name: Check for release
+    runs-on: ubuntu-latest
+    outputs:
+      new_release_published: ${{ steps.semantic.outputs.new_release_published }}
+      new_release_version: ${{ steps.semantic.outputs.new_release_version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check for release
+        id: semantic
+        uses: cycjimmy/semantic-release-action@v4
+        with:
+          dry_run: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build:
+    name: Build ${{ matrix.target }}
+    needs: check
+    if: needs.check.outputs.new_release_published == 'true'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            archive: tar.gz
+            artifact: uppies-macos-x86_64.tar.gz
+          - target: aarch64-apple-darwin
+            os: macos-latest
+            archive: tar.gz
+            artifact: uppies-macos-aarch64.tar.gz
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+            archive: tar.gz
+            artifact: uppies-linux-x86_64.tar.gz
+          - target: aarch64-unknown-linux-musl
+            os: ubuntu-latest
+            archive: tar.gz
+            artifact: uppies-linux-aarch64.tar.gz
+            cross: true
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            archive: zip
+            artifact: uppies-windows-x86_64.zip
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install cross-compilation tools
+        if: matrix.cross
+        uses: taiki-e/setup-cross-toolchain-action@v1
+        with:
+          target: ${{ matrix.target }}
+
+      - name: Build
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Package (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          tar -czvf ${{ matrix.artifact }} -C target/${{ matrix.target }}/release uppies
+
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          7z a ${{ matrix.artifact }} target\${{ matrix.target }}\release\uppies.exe
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.artifact }}
+
   release:
     name: Release
+    needs: [check, build]
     runs-on: ubuntu-latest
-    
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           persist-credentials: false
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 'lts/*'
 
       - name: Setup Rust
-        uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          toolchain: stable
-      
-      - name: Install cross
-        run: cargo install cross --git https://github.com/cross-rs/cross.git
-      
+        uses: dtolnay/rust-toolchain@stable
+
       - name: Install dependencies
         run: npm ci
-      
-      - name: Build release binaries
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Prepare dist
         run: |
           mkdir -p dist
-          
-          # Linux x86_64 (musl)
-          cross build --release --target x86_64-unknown-linux-musl
-          mkdir -p package
-          cp target/x86_64-unknown-linux-musl/release/uppies package/
-          tar -czf dist/uppies-linux-x86_64.tar.gz -C package .
-          rm -rf package
-          
-          # Linux aarch64 (musl)
-          cross build --release --target aarch64-unknown-linux-musl
-          mkdir -p package
-          cp target/aarch64-unknown-linux-musl/release/uppies package/
-          tar -czf dist/uppies-linux-aarch64.tar.gz -C package .
-          rm -rf package
-          
-          # macOS x86_64
-          rustup target add x86_64-apple-darwin
-          cargo build --release --target x86_64-apple-darwin
-          mkdir -p package
-          cp target/x86_64-apple-darwin/release/uppies package/
-          tar -czf dist/uppies-macos-x86_64.tar.gz -C package .
-          rm -rf package
-          
-          # macOS aarch64
-          rustup target add aarch64-apple-darwin
-          cargo build --release --target aarch64-apple-darwin
-          mkdir -p package
-          cp target/aarch64-apple-darwin/release/uppies package/
-          tar -czf dist/uppies-macos-aarch64.tar.gz -C package .
-          rm -rf package
-      
+          find artifacts -type f \( -name "*.tar.gz" -o -name "*.zip" \) -exec mv {} dist/ \;
+
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
