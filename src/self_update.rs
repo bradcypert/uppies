@@ -85,7 +85,7 @@ pub fn download_and_extract(url: &str, dest_dir: &str) -> io::Result<()> {
         .status()?;
 
     if !status.success() {
-        return Err(io::Error::new(io::ErrorKind::Other, "Download failed"));
+        return Err(io::Error::other("Download failed"));
     }
 
     // Extract with tar
@@ -100,7 +100,7 @@ pub fn download_and_extract(url: &str, dest_dir: &str) -> io::Result<()> {
     let _ = fs::remove_file(&tmp_path);
 
     if !status.success() {
-        return Err(io::Error::new(io::ErrorKind::Other, "Extraction failed"));
+        return Err(io::Error::other("Extraction failed"));
     }
 
     Ok(())
