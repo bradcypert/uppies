@@ -107,19 +107,22 @@ pub fn download_and_extract(url: &str, dest_dir: &str) -> io::Result<()> {
 }
 
 pub fn replace_binary(new_binary_path: &str, current_binary_path: &str) -> io::Result<()> {
-    // Make executable
-    let mut perms = fs::metadata(new_binary_path)?.permissions();
-    perms.set_mode(0o755);
-    fs::set_permissions(new_binary_path, perms)?;
-
-    // Backup
+    // Backup existing binary
     let backup_path = format!("{}.backup", current_binary_path);
     let _ = fs::remove_file(&backup_path);
     fs::copy(current_binary_path, &backup_path)?;
 
-    // Replace
-    fs::remove_file(current_binary_path)?;
-    fs::rename(new_binary_path, current_binary_path)?;
+    // Stage in the same directory as the target so rename is always on the same
+    // filesystem (rename(2) is atomic; cross-device rename would fail with EXDEV).
+    let staged_path = format!("{}.new", current_binary_path);
+    fs::copy(new_binary_path, &staged_path)?;
+
+    let mut perms = fs::metadata(&staged_path)?.permissions();
+    perms.set_mode(0o755);
+    fs::set_permissions(&staged_path, perms)?;
+
+    // Atomic replace
+    fs::rename(&staged_path, current_binary_path)?;
 
     Ok(())
 }
