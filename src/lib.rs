@@ -29,8 +29,13 @@ mod tests {
 
     #[test]
     fn test_trim_version() {
-        assert_eq!(trim_version("1.2.3
-"), "1.2.3");
+        assert_eq!(
+            trim_version(
+                "1.2.3
+"
+            ),
+            "1.2.3"
+        );
         assert_eq!(trim_version("  abc123  "), "abc123");
     }
 }

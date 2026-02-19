@@ -1,7 +1,7 @@
+use crate::version::CompareMode;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::os::unix::fs::MetadataExt;
-use crate::version::CompareMode;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AppScriptConfig {
@@ -47,7 +47,8 @@ impl Config {
 }
 
 fn validate_script(path: &str) -> anyhow::Result<()> {
-    let metadata = fs::metadata(path).map_err(|e| anyhow::anyhow!("Failed to stat script {}: {}", path, e))?;
+    let metadata =
+        fs::metadata(path).map_err(|e| anyhow::anyhow!("Failed to stat script {}: {}", path, e))?;
 
     if !metadata.is_file() {
         return Err(anyhow::anyhow!("Script path {} is not a file", path));
@@ -56,7 +57,10 @@ fn validate_script(path: &str) -> anyhow::Result<()> {
     let mode = metadata.mode();
     let is_executable = (mode & 0o111) != 0;
     if !is_executable {
-        return Err(anyhow::anyhow!("Script {} is not executable (chmod +x)", path));
+        return Err(anyhow::anyhow!(
+            "Script {} is not executable (chmod +x)",
+            path
+        ));
     }
 
     Ok(())
