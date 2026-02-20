@@ -19,8 +19,9 @@ pub fn run_script(script_path: &str) -> std::io::Result<ScriptResult> {
     })
 }
 
+/// Trims surrounding whitespace and strips a leading `v` (e.g. `"v1.2.3\n"` → `"1.2.3"`).
 pub fn trim_version(version: &str) -> &str {
-    version.trim()
+    version.trim().trim_start_matches('v')
 }
 
 #[cfg(test)]
@@ -29,13 +30,9 @@ mod tests {
 
     #[test]
     fn test_trim_version() {
-        assert_eq!(
-            trim_version(
-                "1.2.3
-"
-            ),
-            "1.2.3"
-        );
+        assert_eq!(trim_version("1.2.3\n"), "1.2.3");
         assert_eq!(trim_version("  abc123  "), "abc123");
+        assert_eq!(trim_version("v1.2.3\n"), "1.2.3");
+        assert_eq!(trim_version("  v2.0.0  "), "2.0.0");
     }
 }

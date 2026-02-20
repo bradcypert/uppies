@@ -1,6 +1,5 @@
 use serde::Deserialize;
 use std::fs;
-use std::io;
 use std::os::unix::fs::PermissionsExt;
 use std::process::Command;
 
@@ -10,20 +9,19 @@ pub enum Platform {
     LinuxAarch64,
     MacosX86_64,
     MacosAarch64,
-    Unknown,
 }
 
 impl Platform {
-    pub fn current() -> Self {
+    pub fn current() -> anyhow::Result<Self> {
         let os = std::env::consts::OS;
         let arch = std::env::consts::ARCH;
 
         match (os, arch) {
-            ("linux", "x86_64") => Self::LinuxX86_64,
-            ("linux", "aarch64") => Self::LinuxAarch64,
-            ("macos", "x86_64") => Self::MacosX86_64,
-            ("macos", "aarch64") => Self::MacosAarch64,
-            _ => Self::Unknown,
+            ("linux", "x86_64") => Ok(Self::LinuxX86_64),
+            ("linux", "aarch64") => Ok(Self::LinuxAarch64),
+            ("macos", "x86_64") => Ok(Self::MacosX86_64),
+            ("macos", "aarch64") => Ok(Self::MacosAarch64),
+            _ => anyhow::bail!("Unsupported platform: {}-{}", os, arch),
         }
     }
 
@@ -33,7 +31,6 @@ impl Platform {
             Self::LinuxAarch64 => "uppies-linux-aarch64.tar.gz",
             Self::MacosX86_64 => "uppies-macos-x86_64.tar.gz",
             Self::MacosAarch64 => "uppies-macos-aarch64.tar.gz",
-            Self::Unknown => "unknown",
         }
     }
 }
@@ -55,7 +52,7 @@ pub fn get_current_version() -> &'static str {
     env!("CARGO_PKG_VERSION")
 }
 
-pub fn fetch_latest_release(repo: &str) -> Result<ReleaseInfo, Box<dyn std::error::Error>> {
+pub fn fetch_latest_release(repo: &str) -> anyhow::Result<ReleaseInfo> {
     let url = format!("https://api.github.com/repos/{}/releases/latest", repo);
 
     let output = Command::new("curl")
@@ -66,17 +63,16 @@ pub fn fetch_latest_release(repo: &str) -> Result<ReleaseInfo, Box<dyn std::erro
         .output()?;
 
     if !output.status.success() {
-        return Err("Failed to fetch release info".into());
+        anyhow::bail!("Failed to fetch release info");
     }
 
     let release: ReleaseInfo = serde_json::from_slice(&output.stdout)?;
     Ok(release)
 }
 
-pub fn download_and_extract(url: &str, dest_dir: &str) -> io::Result<()> {
+pub fn download_and_extract(url: &str, dest_dir: &str) -> anyhow::Result<()> {
     let tmp_path = format!("{}/uppies-download.tar.gz", dest_dir);
 
-    // Download with curl
     let status = Command::new("curl")
         .arg("-sL")
         .arg("-o")
@@ -85,10 +81,9 @@ pub fn download_and_extract(url: &str, dest_dir: &str) -> io::Result<()> {
         .status()?;
 
     if !status.success() {
-        return Err(io::Error::other("Download failed"));
+        anyhow::bail!("Download failed");
     }
 
-    // Extract with tar
     let status = Command::new("tar")
         .arg("-xzf")
         .arg(&tmp_path)
@@ -96,17 +91,16 @@ pub fn download_and_extract(url: &str, dest_dir: &str) -> io::Result<()> {
         .arg(dest_dir)
         .status()?;
 
-    // Clean up
     let _ = fs::remove_file(&tmp_path);
 
     if !status.success() {
-        return Err(io::Error::other("Extraction failed"));
+        anyhow::bail!("Extraction failed");
     }
 
     Ok(())
 }
 
-pub fn replace_binary(new_binary_path: &str, current_binary_path: &str) -> io::Result<()> {
+pub fn replace_binary(new_binary_path: &str, current_binary_path: &str) -> anyhow::Result<()> {
     // Backup existing binary
     let backup_path = format!("{}.backup", current_binary_path);
     let _ = fs::remove_file(&backup_path);
