@@ -7,7 +7,7 @@ mod self_update;
 mod version;
 
 use crate::config::{App, Config};
-use crate::version::CompareMode;
+use crate::version::{CompareMode, needs_update};
 use uppies::{run_script, trim_version};
 
 #[derive(Parser)]
@@ -232,26 +232,4 @@ fn fetch_versions(app: &App) -> Option<(String, String)> {
     ))
 }
 
-/// Returns `true` if an update is needed, `false` if up to date.
-/// Returns `Err` if semver versions could not be parsed.
-fn needs_update(
-    compare_mode: CompareMode,
-    local_ver: &str,
-    remote_ver: &str,
-) -> anyhow::Result<bool> {
-    match compare_mode {
-        CompareMode::String => Ok(local_ver != remote_ver),
-        CompareMode::Semver => {
-            let local_sem = Version::parse(local_ver);
-            let remote_sem = Version::parse(remote_ver);
-            match (local_sem, remote_sem) {
-                (Ok(l), Ok(r)) => Ok(l < r),
-                _ => anyhow::bail!(
-                    "failed to parse semver (local: {}, remote: {})",
-                    local_ver,
-                    remote_ver
-                ),
-            }
-        }
-    }
-}
+
