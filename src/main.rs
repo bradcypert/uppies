@@ -1,5 +1,6 @@
 use clap::{Parser, Subcommand};
 use semver::Version;
+use std::cmp::Ordering;
 use std::fs;
 
 mod config;
@@ -7,7 +8,7 @@ mod self_update;
 mod version;
 
 use crate::config::{App, Config};
-use crate::version::{CompareMode, needs_update};
+use crate::version::needs_update;
 use uppies::{run_script, trim_version};
 
 #[derive(Parser)]
@@ -70,8 +71,12 @@ fn cmd_check() -> anyhow::Result<()> {
     config.validate()?;
 
     for app in config.apps {
-        let Some((local_ver, remote_ver)) = fetch_versions(&app) else {
-            continue;
+        let (local_ver, remote_ver) = match fetch_versions(&app) {
+            Ok(v) => v,
+            Err(e) => {
+                eprintln!("{}: {}", app.name, e);
+                continue;
+            }
         };
         let update_needed = match needs_update(app.compare_mode, &local_ver, &remote_ver) {
             Ok(v) => v,
@@ -107,8 +112,12 @@ fn cmd_update(app_name: Option<String>, force: bool) -> anyhow::Result<()> {
         let should_update = if force {
             true
         } else {
-            let Some((local_ver, remote_ver)) = fetch_versions(&app) else {
-                continue;
+            let (local_ver, remote_ver) = match fetch_versions(&app) {
+                Ok(v) => v,
+                Err(e) => {
+                    eprintln!("{}: {}", app.name, e);
+                    continue;
+                }
             };
             let update_needed = match needs_update(app.compare_mode, &local_ver, &remote_ver) {
                 Ok(v) => v,
@@ -152,16 +161,16 @@ fn cmd_self_update() -> anyhow::Result<()> {
     let current_sem = Version::parse(current_version)?;
     let latest_sem = Version::parse(latest_version)?;
 
-    if current_sem >= latest_sem {
-        println!(
-            "{}",
-            if current_sem == latest_sem {
-                "Already up to date!"
-            } else {
-                "Current version is newer than latest release"
-            }
-        );
-        return Ok(());
+    match current_sem.cmp(&latest_sem) {
+        Ordering::Equal => {
+            println!("Already up to date!");
+            return Ok(());
+        }
+        Ordering::Greater => {
+            println!("Current version is newer than latest release");
+            return Ok(());
+        }
+        Ordering::Less => {}
     }
 
     println!("\nDownloading uppies {}...", release.version);
@@ -210,26 +219,18 @@ fn load_config() -> anyhow::Result<Config> {
 }
 
 /// Runs both version scripts for an app and returns `(local_ver, remote_ver)`.
-/// Prints an error and returns `None` if either script fails.
-fn fetch_versions(app: &App) -> Option<(String, String)> {
+/// Returns `Err` if either script fails or exits non-zero.
+fn fetch_versions(app: &App) -> anyhow::Result<(String, String)> {
     let local_out = match run_script(app.local.as_command()) {
         Ok(res) if res.exit_code == 0 => res.stdout,
-        _ => {
-            eprintln!("{}: local version script failed", app.name);
-            return None;
-        }
+        _ => anyhow::bail!("local version script failed"),
     };
     let remote_out = match run_script(app.remote.as_command()) {
         Ok(res) if res.exit_code == 0 => res.stdout,
-        _ => {
-            eprintln!("{}: remote version script failed", app.name);
-            return None;
-        }
+        _ => anyhow::bail!("remote version script failed"),
     };
-    Some((
+    Ok((
         trim_version(&local_out).to_string(),
         trim_version(&remote_out).to_string(),
     ))
 }
-
-

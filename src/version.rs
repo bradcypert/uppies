@@ -32,3 +32,38 @@ pub fn needs_update(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_string_mode_up_to_date() {
+        assert!(!needs_update(CompareMode::String, "1.0.0", "1.0.0").unwrap());
+    }
+
+    #[test]
+    fn test_string_mode_update_available() {
+        assert!(needs_update(CompareMode::String, "abc123", "abc124").unwrap());
+    }
+
+    #[test]
+    fn test_semver_up_to_date() {
+        assert!(!needs_update(CompareMode::Semver, "1.0.0", "1.0.0").unwrap());
+    }
+
+    #[test]
+    fn test_semver_update_available() {
+        assert!(needs_update(CompareMode::Semver, "1.0.0", "1.1.0").unwrap());
+    }
+
+    #[test]
+    fn test_semver_local_newer() {
+        assert!(!needs_update(CompareMode::Semver, "2.0.0", "1.9.9").unwrap());
+    }
+
+    #[test]
+    fn test_semver_invalid_versions_err() {
+        assert!(needs_update(CompareMode::Semver, "not-a-version", "1.0.0").is_err());
+    }
+}
