@@ -61,8 +61,8 @@ fn validate_script_config(config: &ScriptConfig) -> anyhow::Result<()> {
         return Ok(()); // inline scripts are validated at runtime
     };
 
-    let metadata = fs::metadata(file)
-        .map_err(|e| anyhow::anyhow!("Failed to stat script {}: {}", file, e))?;
+    let metadata =
+        fs::metadata(file).map_err(|e| anyhow::anyhow!("Failed to stat script {}: {}", file, e))?;
 
     if !metadata.is_file() {
         return Err(anyhow::anyhow!("Script path {} is not a file", file));

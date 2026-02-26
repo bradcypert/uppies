@@ -151,8 +151,7 @@ fn cmd_update(app_name: Option<String>, force: bool) -> anyhow::Result<()> {
 }
 
 fn cmd_self_update() -> anyhow::Result<()> {
-    let repo =
-        std::env::var("UPPIES_REPO").unwrap_or_else(|_| "bradcypert/uppies".to_string());
+    let repo = std::env::var("UPPIES_REPO").unwrap_or_else(|_| "bradcypert/uppies".to_string());
     let current_version = self_update::get_current_version();
     println!("Checking for updates...");
 
@@ -203,7 +202,9 @@ fn cmd_self_update() -> anyhow::Result<()> {
     println!("Installing...");
     self_update::replace_binary(
         &new_binary,
-        exe_path.to_str().ok_or_else(|| anyhow::anyhow!("Invalid exe path"))?,
+        exe_path
+            .to_str()
+            .ok_or_else(|| anyhow::anyhow!("Invalid exe path"))?,
     )?;
 
     let _ = fs::remove_dir_all(&tmp_dir);
@@ -236,9 +237,7 @@ fn cmd_edit() -> anyhow::Result<()> {
         .or_else(|_| std::env::var("EDITOR"))
         .map_err(|_| anyhow::anyhow!("No editor found. Set $VISUAL or $EDITOR."))?;
 
-    let status = std::process::Command::new(&editor)
-        .arg(&path)
-        .status()?;
+    let status = std::process::Command::new(&editor).arg(&path).status()?;
 
     if !status.success() {
         anyhow::bail!("editor exited with status {}", status);
