@@ -1,7 +1,6 @@
 use crate::version::CompareMode;
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::os::unix::fs::MetadataExt;
 use std::path::Path;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -69,11 +68,15 @@ fn validate_script_config(config: &ScriptConfig) -> anyhow::Result<()> {
         return Err(anyhow::anyhow!("Script path {} is not a file", file));
     }
 
-    if (metadata.mode() & 0o111) == 0 {
-        return Err(anyhow::anyhow!(
-            "Script {} is not executable (chmod +x)",
-            file
-        ));
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+        if (metadata.mode() & 0o111) == 0 {
+            return Err(anyhow::anyhow!(
+                "Script {} is not executable (chmod +x)",
+                file
+            ));
+        }
     }
 
     Ok(())

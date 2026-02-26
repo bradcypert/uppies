@@ -1,6 +1,5 @@
 use serde::Deserialize;
 use std::fs;
-use std::os::unix::fs::PermissionsExt;
 use std::process::Command;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -111,9 +110,13 @@ pub fn replace_binary(new_binary_path: &str, current_binary_path: &str) -> anyho
     let staged_path = format!("{}.new", current_binary_path);
     fs::copy(new_binary_path, &staged_path)?;
 
-    let mut perms = fs::metadata(&staged_path)?.permissions();
-    perms.set_mode(0o755);
-    fs::set_permissions(&staged_path, perms)?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mut perms = fs::metadata(&staged_path)?.permissions();
+        perms.set_mode(0o755);
+        fs::set_permissions(&staged_path, perms)?;
+    }
 
     // Atomic replace
     fs::rename(&staged_path, current_binary_path)?;

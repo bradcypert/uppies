@@ -216,9 +216,9 @@ fn cmd_version() {
 }
 
 fn config_path() -> anyhow::Result<PathBuf> {
-    let home =
-        std::env::var("HOME").map_err(|_| anyhow::anyhow!("HOME environment variable not set"))?;
-    Ok(PathBuf::from(home).join(".local/share/uppies/apps.toml"))
+    let base = dirs::config_dir()
+        .ok_or_else(|| anyhow::anyhow!("Could not determine config directory"))?;
+    Ok(base.join("uppies/apps.toml"))
 }
 
 fn load_config() -> anyhow::Result<Config> {
