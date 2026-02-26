@@ -2,6 +2,7 @@ use clap::{Parser, Subcommand};
 use semver::Version;
 use std::cmp::Ordering;
 use std::fs;
+use std::path::PathBuf;
 
 mod config;
 mod self_update;
@@ -37,6 +38,8 @@ enum Commands {
     SelfUpdate,
     /// Show version information
     Version,
+    /// Open the config file in $VISUAL/$EDITOR
+    Edit,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -46,6 +49,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Commands::Update { app, force } => cmd_update(app, force)?,
         Commands::SelfUpdate => cmd_self_update()?,
         Commands::Version => cmd_version(),
+        Commands::Edit => cmd_edit()?,
     }
     Ok(())
 }
@@ -211,11 +215,36 @@ fn cmd_version() {
     println!("uppies version {}", self_update::get_current_version());
 }
 
-fn load_config() -> anyhow::Result<Config> {
+fn config_path() -> anyhow::Result<PathBuf> {
     let home =
         std::env::var("HOME").map_err(|_| anyhow::anyhow!("HOME environment variable not set"))?;
-    let path = std::path::PathBuf::from(home).join(".local/share/uppies/apps.toml");
-    Config::load_from_file(&path)
+    Ok(PathBuf::from(home).join(".local/share/uppies/apps.toml"))
+}
+
+fn load_config() -> anyhow::Result<Config> {
+    Config::load_from_file(&config_path()?)
+}
+
+fn cmd_edit() -> anyhow::Result<()> {
+    let path = config_path()?;
+
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+
+    let editor = std::env::var("VISUAL")
+        .or_else(|_| std::env::var("EDITOR"))
+        .map_err(|_| anyhow::anyhow!("No editor found. Set $VISUAL or $EDITOR."))?;
+
+    let status = std::process::Command::new(&editor)
+        .arg(&path)
+        .status()?;
+
+    if !status.success() {
+        anyhow::bail!("editor exited with status {}", status);
+    }
+
+    Ok(())
 }
 
 /// Runs both version scripts for an app and returns `(local_ver, remote_ver)`.
