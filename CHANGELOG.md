@@ -1,3 +1,13 @@
+## [1.2.0](https://github.com/bradcypert/uppies/compare/v1.1.0...v1.2.0) (2026-03-15)
+
+### Features
+
+* implement all growth features ([8f5d032](https://github.com/bradcypert/uppies/commit/8f5d032c30e9b10df5a24d94318854d78fe6c2d1))
+
+### Documentation
+
+* add growth features analysis for uppies ([427dbf8](https://github.com/bradcypert/uppies/commit/427dbf845ae9978752f41908cb4846960d62cb13))
+
 ## [1.1.0](https://github.com/bradcypert/uppies/compare/v1.0.1...v1.1.0) (2026-02-26)
 
 ### Features
