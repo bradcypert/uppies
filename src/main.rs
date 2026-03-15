@@ -1,5 +1,5 @@
 use clap::{CommandFactory, Parser, Subcommand, ValueEnum};
-use clap_complete::{generate, Shell};
+use clap_complete::{Shell, generate};
 use semver::Version;
 use serde::Serialize;
 use std::cmp::Ordering;
@@ -16,7 +16,7 @@ mod topo;
 mod version;
 
 use crate::config::{App, Config, ScriptConfig};
-use crate::version::{needs_update, CompareMode};
+use crate::version::{CompareMode, needs_update};
 use uppies::{run_script, trim_version};
 
 // ---------------------------------------------------------------------------
@@ -197,10 +197,7 @@ fn cmd_list(
                     format!(" [{}]", app.tags.join(", "))
                 };
                 if let Some(ref desc) = app.description {
-                    println!(
-                        "{:<20} {}{}{}",
-                        app.name, desc, tags_str, pinned_marker
-                    );
+                    println!("{:<20} {}{}{}", app.name, desc, tags_str, pinned_marker);
                 } else {
                     println!("{}{}{}", app.name, tags_str, pinned_marker);
                 }
@@ -249,7 +246,10 @@ fn cmd_check(
         if !watch {
             break;
         }
-        println!("\n(watching — next check in {} seconds, Ctrl-C to stop)", interval);
+        println!(
+            "\n(watching — next check in {} seconds, Ctrl-C to stop)",
+            interval
+        );
         thread::sleep(Duration::from_secs(interval));
         println!();
     }
@@ -293,19 +293,17 @@ fn run_check(
         }
 
         match fetch_versions(app) {
-            Err(e) => {
-                match format {
-                    OutputFormat::Text => eprintln!("{}: {}", app.name, e),
-                    OutputFormat::Json => entries.push(CheckEntry {
-                        name: app.name.clone(),
-                        local: None,
-                        remote: None,
-                        update_available: None,
-                        pinned: false,
-                        error: Some(e.to_string()),
-                    }),
-                }
-            }
+            Err(e) => match format {
+                OutputFormat::Text => eprintln!("{}: {}", app.name, e),
+                OutputFormat::Json => entries.push(CheckEntry {
+                    name: app.name.clone(),
+                    local: None,
+                    remote: None,
+                    update_available: None,
+                    pinned: false,
+                    error: Some(e.to_string()),
+                }),
+            },
             Ok((local_ver, remote_ver)) => {
                 let update_needed = match needs_update(app.compare_mode, &local_ver, &remote_ver) {
                     Ok(v) => v,
@@ -427,12 +425,12 @@ fn run_level_parallel(apps: Vec<App>, force: bool, dry_run: bool) -> anyhow::Res
     let handles: Vec<_> = apps
         .into_iter()
         .map(|app| {
-            thread::spawn(move || {
-                match run_one_update_buffered(&app, force, dry_run) {
+            thread::spawn(
+                move || match run_one_update_buffered(&app, force, dry_run) {
                     Ok(buf) => buf,
                     Err(e) => format!("{}: error: {}\n", app.name, e),
-                }
-            })
+                },
+            )
         })
         .collect();
 
@@ -455,8 +453,8 @@ fn run_one_update_buffered(app: &App, force: bool, dry_run: bool) -> anyhow::Res
         out.push_str(&format!("{}: forcing update\n", app.name));
         true
     } else {
-        let (local_ver, remote_ver) = fetch_versions(app)
-            .map_err(|e| anyhow::anyhow!("{}: {}", app.name, e))?;
+        let (local_ver, remote_ver) =
+            fetch_versions(app).map_err(|e| anyhow::anyhow!("{}: {}", app.name, e))?;
         let update_needed = needs_update(app.compare_mode, &local_ver, &remote_ver)
             .map_err(|e| anyhow::anyhow!("{}: {}", app.name, e))?;
 
@@ -466,7 +464,10 @@ fn run_one_update_buffered(app: &App, force: bool, dry_run: bool) -> anyhow::Res
                 app.name, local_ver, remote_ver
             ));
             if dry_run {
-                out.push_str(&format!("{}: (dry run — skipping update script)\n", app.name));
+                out.push_str(&format!(
+                    "{}: (dry run — skipping update script)\n",
+                    app.name
+                ));
             } else {
                 // Store versions for history log before running
                 let from = local_ver.clone();
@@ -482,7 +483,10 @@ fn run_one_update_buffered(app: &App, force: bool, dry_run: bool) -> anyhow::Res
                 return Ok(out);
             }
         } else {
-            out.push_str(&format!("{}: already up to date ({})\n", app.name, local_ver));
+            out.push_str(&format!(
+                "{}: already up to date ({})\n",
+                app.name, local_ver
+            ));
         }
         update_needed
     };
@@ -697,25 +701,20 @@ fn cmd_add(config_override: Option<PathBuf>) -> anyhow::Result<()> {
     let remote = prompt_script("Remote version script")?;
     let update = prompt_script("Update script")?;
 
-    let compare_mode_str = prompt_with_default(
-        "Compare mode [string/semver] (default: string): ",
-        "string",
-    )?;
+    let compare_mode_str =
+        prompt_with_default("Compare mode [string/semver] (default: string): ", "string")?;
     let compare_mode = match compare_mode_str.to_lowercase().as_str() {
         "semver" => CompareMode::Semver,
         _ => CompareMode::String,
     };
 
-    let timeout_secs: Option<u64> = prompt_optional("Script timeout in seconds (optional): ")?
-        .and_then(|s| s.parse().ok());
+    let timeout_secs: Option<u64> =
+        prompt_optional("Script timeout in seconds (optional): ")?.and_then(|s| s.parse().ok());
 
-    let pinned_str =
-        prompt_with_default("Pin this app (skip during update/check)? [y/N]: ", "n")?;
+    let pinned_str = prompt_with_default("Pin this app (skip during update/check)? [y/N]: ", "n")?;
     let pinned = matches!(pinned_str.to_lowercase().as_str(), "y" | "yes");
 
-    let depends_raw = prompt_optional(
-        "Depends on (comma-separated app names, optional): ",
-    )?;
+    let depends_raw = prompt_optional("Depends on (comma-separated app names, optional): ")?;
     let depends_on: Vec<String> = depends_raw
         .map(|s| {
             s.split(',')
@@ -870,11 +869,7 @@ fn toml_quote(s: &str) -> String {
 // remove
 // ---------------------------------------------------------------------------
 
-fn cmd_remove(
-    config_override: Option<PathBuf>,
-    app_name: String,
-    yes: bool,
-) -> anyhow::Result<()> {
+fn cmd_remove(config_override: Option<PathBuf>, app_name: String, yes: bool) -> anyhow::Result<()> {
     let config_path = resolve_config_path(config_override)?;
 
     if !config_path.exists() {
@@ -1029,11 +1024,7 @@ fn prompt_optional(question: &str) -> anyhow::Result<Option<String>> {
 
 fn prompt_with_default(question: &str, default: &str) -> anyhow::Result<String> {
     let s = prompt_line(question)?;
-    Ok(if s.is_empty() {
-        default.to_string()
-    } else {
-        s
-    })
+    Ok(if s.is_empty() { default.to_string() } else { s })
 }
 
 fn prompt_line(question: &str) -> anyhow::Result<String> {

@@ -58,9 +58,7 @@ pub fn run_script(script: &str, timeout_secs: Option<u64>) -> std::io::Result<Sc
 fn kill_process(pid: u32) {
     #[cfg(unix)]
     {
-        let _ = Command::new("kill")
-            .args(["-9", &pid.to_string()])
-            .output();
+        let _ = Command::new("kill").args(["-9", &pid.to_string()]).output();
     }
     #[cfg(windows)]
     {
