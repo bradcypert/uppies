@@ -5,9 +5,12 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.101"
-dirs = "6"
+chrono = "0.4"
 clap = { version = "4.5.59", features = ["derive"] }
+clap_complete = "4.5"
+dirs = "6"
 semver = "1.0.27"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
 toml = "1.0.2"
+toml_edit = "0.22"
